@@ -221,6 +221,16 @@ def set_args(eps,logdir):
     return  parsed
 
 if __name__ == "__main__":
+    from zipline.data.bundles import register, yahoo_equities
+    from zipline.data.bundles.viadb import viadb
+    from cn_stock_holidays.zipline.default_calendar import shsz_calendar
+    equities2 = {
+    }
+    register(
+        'my-yahoo-equities-bundle',  # name this whatever you like
+        yahoo_equities(equities2),
+        calendar='SHSZ'
+    )
     for eps in [1.0, 1.25, 1.5]:
         args = set_args(eps,'/tmp/olmar/Dow-30/eps = %.2f' % eps)
         perf = _run(**args)
@@ -228,7 +238,6 @@ if __name__ == "__main__":
         print '-' * 100
         print '/tmp/olmar/Dow-30/eps = %.2f' % eps
         results = _run(args)
-
     '''
     # Set the simulation start and end dates.
     start = datetime(2004, 1, 1, 0, 0, 0, 0, pytz.utc)

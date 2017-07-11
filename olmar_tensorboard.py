@@ -224,11 +224,9 @@ if __name__ == "__main__":
     from zipline.data.bundles import register, yahoo_equities
     from zipline.data.bundles.viadb import viadb
     from cn_stock_holidays.zipline.default_calendar import shsz_calendar
-    equities2 = {
-    }
     register(
         'my-yahoo-equities-bundle',  # name this whatever you like
-        yahoo_equities(equities2),
+        yahoo_equities({}),
         calendar='SHSZ'
     )
     for eps in [1.0, 1.25, 1.5]:

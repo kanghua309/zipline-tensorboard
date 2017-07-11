@@ -1,52 +1,58 @@
 import sys
 import logbook
 import numpy as np
-from datetime import datetime
-import pytz
+import pandas as pd
 
-from zipline.algorithm import TradingAlgorithm
-from zipline.utils.factory import load_from_yahoo
 from zipline.finance import commission
 
 zipline_logging = logbook.NestedSetup([
-    logbook.NullHandler(level=logbook.DEBUG, bubble=True),
+    logbook.NullHandler(),
     logbook.StreamHandler(sys.stdout, level=logbook.INFO),
     logbook.StreamHandler(sys.stderr, level=logbook.ERROR),
 ])
 zipline_logging.push_application()
 
 # DOW 30
-STOCKS = ['AAPL', 'AXP', 'BA', 'CAT', 'CSCO', 
-          'CVX', 'DD', 'DIS', 'GE', 'GS', 'HD', 
-          'IBM', 'INTC', 'JNJ', 'JPM', 'KO', 'MCD', 
-          'MMM', 'MRK', 'MSFT', 'NKE', 'PFE', 'PG', 
-          'TRV', 'UNH', 'UTX', 'V', 'VZ', 'WMT', 'XOM']
+STOCKS = ['300640']
 
-from tensorboard import TensorBoard
+#from tensorboard import TensorBoard
 
 
 # On-Line Portfolio Moving Average Reversion
 # More info can be found in the corresponding paper:
 # http://icml.cc/2012/papers/168.pdf
-def initialize(algo, window_length=5):
+def initialize(algo, eps=1, window_length=5):
     algo.stocks = STOCKS
     algo.sids = [algo.symbol(symbol) for symbol in algo.stocks]
     algo.m = len(algo.stocks)
     algo.price = {}
     algo.b_t = np.ones(algo.m) / algo.m
     algo.last_desired_port = np.ones(algo.m) / algo.m
+    algo.eps = eps
     algo.init = True
     algo.days = 0
     algo.window_length = window_length
-    algo.add_transform('mavg', 5)
 
-    algo.set_commission(commission.PerShare(cost=0.005))
+    algo.set_commission(commission.PerShare(cost=0))
 
+    try:
+        Nparams = len(algo.algo_params)
+        if Nparams == 2:
+            UseParams = True
+        else:
+            print 'len context.algo_params is', Nparams, ' expecting 2'
+    except Exception as e:
+        print 'context.params not passed', e
+    if UseParams:
+        print 'Setting Algo parameters via passed algo_params'
+        algo.eps = algo.algo_params['eps']
+        algo.tb_log_dir= algo.algo_params['logdir']
+    '''
     if algo.tb_log_dir:
         algo.tensorboard = TensorBoard(log_dir=algo.tb_log_dir)
     else:
         algo.tensorboard = None
-
+    '''
 
 def handle_data(algo, data):
     algo.days += 1
@@ -61,13 +67,13 @@ def handle_data(algo, data):
     m = algo.m
 
     x_tilde = np.zeros(m)
-    b = np.zeros(m)
 
     # find relative moving average price for each asset
+    mavgs = data.history(algo.sids, 'price', algo.window_length, '1d').mean()
     for i, sid in enumerate(algo.sids):
-        price = data[sid].price
+        price = data.current(sid, "price")
         # Relative mean deviation
-        x_tilde[i] = data[sid].mavg(algo.window_length) / price
+        x_tilde[i] = mavgs[sid] / price
 
     ###########################
     # Inside of OLMAR (algo 2)
@@ -99,11 +105,11 @@ def handle_data(algo, data):
     # record something to show that these get logged
     # to tensorboard as well:
     algo.record(x_bar=x_bar)
-
+    '''
     if algo.tensorboard is not None:
         # record algo stats to tensorboard
         algo.tensorboard.log_algo(algo)
-
+    '''
 
 def rebalance_portfolio(algo, data, desired_port):
     # rebalance portfolio
@@ -115,11 +121,11 @@ def rebalance_portfolio(algo, data, desired_port):
         positions_value = algo.portfolio.starting_cash
     else:
         positions_value = algo.portfolio.positions_value + \
-            algo.portfolio.cash
+                          algo.portfolio.cash
 
     for i, sid in enumerate(algo.sids):
         current_amount[i] = algo.portfolio.positions[sid].amount
-        prices[i] = data[sid].price
+        prices[i] = data.current(sid, "price")
 
     desired_amount = np.round(desired_port * positions_value / prices)
 
@@ -129,29 +135,24 @@ def rebalance_portfolio(algo, data, desired_port):
     for i, sid in enumerate(algo.sids):
         algo.order(sid, diff_amount[i])
 
-
 def simplex_projection(v, b=1):
     """Projection vectors to the simplex domain
-
-    Implemented according to the paper: Efficient projections onto the
-    l1-ball for learning in high dimensions, John Duchi, et al. ICML 2008.
-    Implementation Time: 2011 June 17 by Bin@libin AT pmail.ntu.edu.sg
-    Optimization Problem: min_{w}\| w - v \|_{2}^{2}
-    s.t. sum_{i=1}^{m}=z, w_{i}\geq 0
-
-    Input: A vector v \in R^{m}, and a scalar z > 0 (default=1)
-    Output: Projection vector w
-
-    :Example:
-    >>> proj = simplex_projection([.4 ,.3, -.4, .5])
-    >>> print(proj)
-    array([ 0.33333333, 0.23333333, 0. , 0.43333333])
-    >>> print(proj.sum())
-    1.0
-
-    Original matlab implementation: John Duchi (jduchi@cs.berkeley.edu)
-    Python-port: Copyright 2013 by Thomas Wiecki (thomas.wiecki@gmail.com).
-    """
+       Implemented according to the paper: Efficient projections onto the
+       l1-ball for learning in high dimensions, John Duchi, et al. ICML 2008.
+       Implementation Time: 2011 June 17 by Bin@libin AT pmail.ntu.edu.sg
+       Optimization Problem: min_{w}\| w - v \|_{2}^{2}
+       s.t. sum_{i=1}^{m}=z, w_{i}\geq 0
+       Input: A vector v \in R^{m}, and a scalar z > 0 (default=1)
+       Output: Projection vector w
+       :Example:
+       >>> proj = simplex_projection([.4 ,.3, -.4, .5])
+       >>> proj  # doctest: +NORMALIZE_WHITESPACE
+       array([ 0.33333333, 0.23333333, 0. , 0.43333333])
+       >>> print(proj.sum())
+       1.0
+       Original matlab implementation: John Duchi (jduchi@cs.berkeley.edu)
+       Python-port: Copyright 2013 by Thomas Wiecki (thomas.wiecki@gmail.com).
+       """
 
     v = np.asarray(v)
     p = len(v)
@@ -167,7 +168,6 @@ def simplex_projection(v, b=1):
     w[w < 0] = 0
     return w
 
-
 # Note: this function can be removed if running
 # this algorithm on quantopian.com
 def analyze(context=None, results=None):
@@ -181,7 +181,55 @@ def analyze(context=None, results=None):
 
 # Note: this if-block should be removed if running
 # this algorithm on quantopian.com
-if __name__ == '__main__':
+
+from zipline.utils.run_algo import _run
+from pandas.tslib import Timestamp
+import os
+
+def set_args(eps,logdir):
+    parsed = {}
+    parsed['initialize'] = initialize
+    parsed['handle_data'] = handle_data
+    parsed['before_trading_start'] = None
+    parsed['analyze'] = None
+    parsed['algotext'] = None
+    parsed['defines'] = ()
+    parsed['capital_base'] = 1000000
+    parsed['data'] = None
+    parsed['bundle'] = 'my-yahoo-equities-bundle'
+    # parsed['bundle']='YAHOO'
+    # parsed['bundle_timestamp']=None
+    parsed['bundle_timestamp'] = pd.Timestamp.utcnow()
+    parsed['start'] = Timestamp('2017-05-01 13:30:00+0000', tz='UTC')
+    parsed['end'] = Timestamp('2017-05-31 13:30:00+0000', tz='UTC')
+    #parsed['algofile'] = open('D:\\workspace\\algotrading\\MyAlgo\\optim\\spearmint-try.py')
+    parsed['algofile'] = None
+    parsed['data_frequency'] = 'daily'
+    parsed['bm_symbol'] = None
+    parsed['print_algo'] = False
+    parsed['output'] = 'os.devnull'
+    parsed['local_namespace'] = None
+    parsed['environ'] = os.environ
+
+    # Below what we expect spearmint to pass us
+    # parsed['algo_params']=[47,88.7,7.7]
+    # D={}
+    # D['timeperiod']=10
+    # D['nbdevup']=1.00
+    # D['nbdevdn']=1.00
+    parsed['algo_params'] = {'eps':eps,'logdir':logdir}
+    return  parsed
+
+if __name__ == "__main__":
+    for eps in [1.0, 1.25, 1.5]:
+        args = set_args(eps,'/tmp/olmar/Dow-30/eps = %.2f' % eps)
+        perf = _run(**args)
+        #olmar.tb_log_dir = '/tmp/olmar/Dow-30/eps = %.2f' % eps
+        print '-' * 100
+        print '/tmp/olmar/Dow-30/eps = %.2f' % eps
+        results = _run(args)
+
+    '''
     # Set the simulation start and end dates.
     start = datetime(2004, 1, 1, 0, 0, 0, 0, pytz.utc)
     end = datetime(2016, 1, 1, 0, 0, 0, 0, pytz.utc)
@@ -205,3 +253,4 @@ if __name__ == '__main__':
 
         # Plot the portfolio data.
         #analyze(results=results)
+    '''

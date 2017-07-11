@@ -237,7 +237,7 @@ if __name__ == "__main__":
         #olmar.tb_log_dir = '/tmp/olmar/Dow-30/eps = %.2f' % eps
         print '-' * 100
         print '/tmp/olmar/Dow-30/eps = %.2f' % eps
-        results = _run(args)
+        results = _run(**args)
     '''
     # Set the simulation start and end dates.
     start = datetime(2004, 1, 1, 0, 0, 0, 0, pytz.utc)

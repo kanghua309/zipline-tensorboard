@@ -102,8 +102,13 @@ def handle_data(algo, data):
     # update portfolio
     algo.b_t = b_norm
 
+    for stock in algo.stocks:
+        sym="stock."+stock
+        print "sym:",sym,algo.symbol(stock),data.current(algo.symbol(stock), "price")
+    	algo.record(sym,data.current(algo.symbol(stock), "price"))
     # record something to show that these get logged
     # to tensorboard as well:
+    print "x_bar:",x_bar
     algo.record(x_bar=x_bar)
     
     if algo.tensorboard is not None:

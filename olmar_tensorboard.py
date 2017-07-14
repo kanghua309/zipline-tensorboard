@@ -13,9 +13,9 @@ zipline_logging = logbook.NestedSetup([
 zipline_logging.push_application()
 
 # DOW 30
-STOCKS = ['300640']
+STOCKS = ['300640','300503']
 
-#from tensorboard import TensorBoard
+from tensorboard import TensorBoard
 
 
 # On-Line Portfolio Moving Average Reversion
@@ -47,12 +47,12 @@ def initialize(algo, eps=1, window_length=5):
         print 'Setting Algo parameters via passed algo_params'
         algo.eps = algo.algo_params['eps']
         algo.tb_log_dir= algo.algo_params['logdir']
-    '''
+
     if algo.tb_log_dir:
         algo.tensorboard = TensorBoard(log_dir=algo.tb_log_dir)
     else:
         algo.tensorboard = None
-    '''
+
 
 def handle_data(algo, data):
     algo.days += 1
@@ -105,11 +105,11 @@ def handle_data(algo, data):
     # record something to show that these get logged
     # to tensorboard as well:
     algo.record(x_bar=x_bar)
-    '''
+    
     if algo.tensorboard is not None:
         # record algo stats to tensorboard
         algo.tensorboard.log_algo(algo)
-    '''
+    
 
 def rebalance_portfolio(algo, data, desired_port):
     # rebalance portfolio

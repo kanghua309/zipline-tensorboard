@@ -44,7 +44,7 @@ def initialize(algo, eps=1, window_length=5):
     except Exception as e:
         print 'context.params not passed', e
     if UseParams:
-        print 'Setting Algo parameters via passed algo_params',algo.algo_params
+        print 'Setting Algo parameters via passed algo_params'
         algo.eps = algo.algo_params['eps']
         algo.tb_log_dir= algo.algo_params['logdir']
 
@@ -235,12 +235,11 @@ if __name__ == "__main__":
         calendar='SHSZ'
     )
     for eps in [1.0, 1.25, 1.5]:
-        logpath = '/home/zipline/mylog/olmar/Dow-30/eps = %.2f' % eps
-        args = set_args(eps,logpath)
+        args = set_args(eps,'/tmp/olmar/Dow-30/eps = %.2f' % eps)
         perf = _run(**args)
         #olmar.tb_log_dir = '/tmp/olmar/Dow-30/eps = %.2f' % eps
         print '-' * 100
-        print logpath
+        print '/tmp/olmar/Dow-30/eps = %.2f' % eps
         results = _run(**args)
     '''
     # Set the simulation start and end dates.

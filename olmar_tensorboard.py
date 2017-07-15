@@ -238,8 +238,8 @@ if __name__ == "__main__":
     __import__('shutil').rmtree(logbasedir)
     print "clean over ..."
     for eps in [1.0, 1.25, 1.5]:
-        #logpath = logbasedir + '/Dow-30/eps = %.2f' % eps
-        logpath = logbasedir + '/Dow30/eps'
+        logpath = logbasedir + '/Dow-30/eps = %.2f' % eps
+        #logpath = logbasedir + '/Dow30/eps'
         args = set_args(eps,logpath)
         print '-' * 100
         results = _run(**args)

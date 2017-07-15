@@ -233,10 +233,8 @@ if __name__ == "__main__":
         yahoo_equities({}),
         calendar='SHSZ'
     )
-    print "register over ..."
     logbasedir = '/home/zipline/mylog/olmar'
     __import__('shutil').rmtree(logbasedir)
-    print "clean over ..."
     for eps in [1.0, 1.25, 1.5]:
         logpath = logbasedir + '/Dow-30/eps = %.2f' % eps
         #logpath = logbasedir + '/Dow30/eps'

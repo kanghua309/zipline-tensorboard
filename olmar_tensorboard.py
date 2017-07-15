@@ -205,7 +205,7 @@ def set_args(eps,logdir):
     # parsed['bundle']='YAHOO'
     # parsed['bundle_timestamp']=None
     parsed['bundle_timestamp'] = pd.Timestamp.utcnow()
-    parsed['start'] = Timestamp('2017-05-01 13:30:00+0000', tz='UTC')
+    parsed['start'] = Timestamp('2016-05-01 13:30:00+0000', tz='UTC')
     parsed['end'] = Timestamp('2017-05-31 13:30:00+0000', tz='UTC')
     #parsed['algofile'] = open('D:\\workspace\\algotrading\\MyAlgo\\optim\\spearmint-try.py')
     parsed['algofile'] = None

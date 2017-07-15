@@ -39,6 +39,7 @@ class TensorBoard(object):
             logs: A dict containing what we want to log to TensorBoard.
         """
         for name, value in logs.items():
+            print name,value
             summary = tf.Summary()
             summary_value = summary.value.add()
             summary_value.simple_value = value
@@ -65,7 +66,6 @@ class TensorBoard(object):
             epoch = datetime.date.toordinal(algo.get_datetime())
 
         logs = {}
-
         # add portfolio related things
         logs['portfolio value'] = algo.portfolio.portfolio_value
         logs['portfolio pnl'] = algo.portfolio.pnl
@@ -77,13 +77,10 @@ class TensorBoard(object):
         logs['number of orders'] = len(algo.blotter.orders)
         logs['number of open orders'] = len(algo.blotter.open_orders)
         logs['number of open positions'] = len(algo.portfolio.positions)
-
         # add recorded variables from `zipline.algorithm.record` method
         for name, value in algo.recorded_vars.items():
             logs[name] = value
-
         # add any extras passed in through `other_logs` dictionary
         for name, value in other_logs.items():
             logs[name] = value
-
         self.log_dict(epoch, logs)

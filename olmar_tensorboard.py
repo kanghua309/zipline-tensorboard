@@ -13,7 +13,7 @@ zipline_logging = logbook.NestedSetup([
 zipline_logging.push_application()
 
 # DOW 30
-STOCKS = ['300640','300503']
+STOCKS = ['603000','603002']
 
 from tensorboard import TensorBoard
 
@@ -34,7 +34,7 @@ def initialize(algo, eps=1, window_length=5):
     algo.window_length = window_length
 
     algo.set_commission(commission.PerShare(cost=0))
-
+    
     try:
         Nparams = len(algo.algo_params)
         if Nparams == 2:
@@ -44,7 +44,7 @@ def initialize(algo, eps=1, window_length=5):
     except Exception as e:
         print 'context.params not passed', e
     if UseParams:
-        print 'Setting Algo parameters via passed algo_params'
+        print 'Setting Algo parameters via passed algo_params',algo.algo_params
         algo.eps = algo.algo_params['eps']
         algo.tb_log_dir= algo.algo_params['logdir']
 
@@ -101,19 +101,18 @@ def handle_data(algo, data):
 
     # update portfolio
     algo.b_t = b_norm
-
     for stock in algo.stocks:
         sym="stock."+stock
-        print "sym:",sym,algo.symbol(stock),data.current(algo.symbol(stock), "price")
+        #print "sym:",sym,algo.symbol(stock),data.current(algo.symbol(stock), "price")
     	algo.record(sym,data.current(algo.symbol(stock), "price"))
     # record something to show that these get logged
     # to tensorboard as well:
-    print "x_bar:",x_bar
+    #print "x_bar:",x_bar
     algo.record(x_bar=x_bar)
     
     if algo.tensorboard is not None:
         # record algo stats to tensorboard
-        algo.tensorboard.log_algo(algo)
+        algo.tensorboard.log_algo(algo,algo.days)
     
 
 def rebalance_portfolio(algo, data, desired_port):
@@ -205,8 +204,8 @@ def set_args(eps,logdir):
     # parsed['bundle']='YAHOO'
     # parsed['bundle_timestamp']=None
     parsed['bundle_timestamp'] = pd.Timestamp.utcnow()
-    parsed['start'] = Timestamp('2016-05-01 13:30:00+0000', tz='UTC')
-    parsed['end'] = Timestamp('2017-05-31 13:30:00+0000', tz='UTC')
+    parsed['start'] = Timestamp('2017-05-01 00:00:00+0000', tz='UTC')
+    parsed['end'] = Timestamp('2017-07-01 00:00:00+0000', tz='UTC')
     #parsed['algofile'] = open('D:\\workspace\\algotrading\\MyAlgo\\optim\\spearmint-try.py')
     parsed['algofile'] = None
     parsed['data_frequency'] = 'daily'
@@ -234,12 +233,15 @@ if __name__ == "__main__":
         yahoo_equities({}),
         calendar='SHSZ'
     )
+    print "register over ..."
+    logbasedir = '/home/zipline/mylog/olmar'
+    __import__('shutil').rmtree(logbasedir)
+    print "clean over ..."
     for eps in [1.0, 1.25, 1.5]:
-        args = set_args(eps,'/tmp/olmar/Dow-30/eps = %.2f' % eps)
-        perf = _run(**args)
-        #olmar.tb_log_dir = '/tmp/olmar/Dow-30/eps = %.2f' % eps
+        #logpath = logbasedir + '/Dow-30/eps = %.2f' % eps
+        logpath = logbasedir + '/Dow30/eps'
+        args = set_args(eps,logpath)
         print '-' * 100
-        print '/tmp/olmar/Dow-30/eps = %.2f' % eps
         results = _run(**args)
     '''
     # Set the simulation start and end dates.
